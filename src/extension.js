@@ -8,6 +8,20 @@ exports.activate = function (context) {
 exports.deactivate = function () {
 };
 let bbbug = {
+    data: {
+        postBase: {
+            access_token: "",
+            version: 10000,
+            plat: "vscode",
+        },
+        userInfo:false,
+        form: {
+            login: {
+                user_account: "",
+                user_password: ""
+            }
+        }
+    },
     init() {
         let that = this;
         vscode.window.showQuickPick(
@@ -19,7 +33,7 @@ let bbbug = {
                 "在线用户",
             ],
             {
-                placeHolder: 'Welcome to bbbug.com and select:'
+                placeHolder: '欢迎来到BBBUG.COM音乐聊天室'
             })
             .then(function (msg) {
                 switch (msg) {
@@ -30,8 +44,8 @@ let bbbug = {
                         console.log(msg);
                         if (msg != undefined) {
                             // vscode.window.setStatusBarMessage('We will comming soon...',3000);
-                            vscode.window.showInformationMessage('We will comming soon...',{
-                                modal:true
+                            vscode.window.showInformationMessage('We will comming soon...', {
+                                modal: true
                             });
                             that.init();
                         }
