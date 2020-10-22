@@ -1,0 +1,80 @@
+{
+    "name": "com.bbbug.vscode",
+    "displayName": "BBBUG.COM",
+    "description": "BBBUG.COM",
+    "keywords": [
+        "vscode",
+        "plugin",
+        "bbbug",
+        "音乐",
+        "听歌",
+        "song",
+        "music",
+        "划水"
+    ],
+    "version": "1.0.1",
+    "publisher": "Hamm",
+    "engines": {
+        "vscode": "^1.27.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "icon": "images/bug.png",
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./src/extension",
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Code插件demo",
+            "properties": {
+                "vscodePluginDemo.yourName": {
+                    "type": "string",
+                    "default": "guest",
+                    "description": "你的名字"
+                },
+                "vscodePluginDemo.showTip": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "启动时显示自定义欢迎页"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "extension.bbbug",
+                "title": "BBBUG菜单"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "extension.bbbug",
+                "key": "alt+f1",
+                "mac": "cmd+f1",
+                "when": "editorTextFocus"
+            }
+        ]
+    },
+    "scripts": {
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6",
+        "eslint": "^4.11.0",
+        "@types/node": "^7.0.43",
+        "@types/mocha": "^2.2.42"
+    },
+    "license": "SEE LICENSE IN LICENSE.txt",
+    "bugs": {
+        "url": "https://github.com/sxei/vscode-plugin-demo/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sxei/vscode-plugin-demo"
+    },
+    "homepage": "https://github.com/sxei/vscode-plugin-demo/blob/master/README.md"
+}
