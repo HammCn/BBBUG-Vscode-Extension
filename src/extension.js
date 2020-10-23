@@ -1,8 +1,54 @@
 const vscode = require('vscode');
 const axios = require('axios');
 let WebSocketClient = require('websocket').client;//获取websocketclient模块
-let roomBar, musicBar, onlineBar;
+let roomBar, musicBar, onlineBar, userBar;
 exports.activate = function (context) {
+
+    vscode.commands.registerCommand('extension.bbbug', function () {
+        vscode.window.showQuickPick(
+            [
+                "我要聊天 Cmd(Alt)+F2",
+                "我要点歌",
+                "当前歌单",
+                bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
+                "切换房间",
+                "在线用户",
+                "退出登录",
+            ],
+            {
+                placeHolder: 'BBBUG.COM快捷指令'
+            })
+            .then(function (msg) {
+                if (msg != undefined) {
+                    switch (msg) {
+                        case '我要聊天 Cmd(Alt)+F2':
+                            bbbug.sendMessage();
+                            break;
+                        case '我要点歌':
+                            bbbug.searchSong();
+                            break;
+                        case '当前歌单':
+                            bbbug.showPickedSongList();
+                            break;
+                        case '切掉这首歌':
+                        case '不喜欢这首歌':
+                            bbbug.passSong();
+                            break;
+                        case '切换房间':
+                            bbbug.showRoomList();
+                            break;
+                        case '在线用户':
+                            vscode.commands.executeCommand('extension.bbbug.user.online');
+                            break;
+                        case '退出登录':
+                            bbbug.logout();
+                            break;
+                        default:
+                            bbbug.showError(msg + "即将上线，敬请期待");
+                    }
+                }
+            });
+    });
     bbbug.websocket.client = new WebSocketClient();//创建客户端对象
     //连接失败执行
     bbbug.websocket.client.on('connectFailed',
@@ -21,7 +67,6 @@ exports.activate = function (context) {
         bbbug.websocket.connection = connection;
         connection.on('error', function (error) {
             bbbug.websocket.isConnected = false;
-            console.log("Connection Error: " + error.toString());
 
         });
         //连接关闭执行
@@ -50,52 +95,52 @@ exports.activate = function (context) {
 
     onlineBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
     onlineBar.text = '$(smiley) 在线0';
-    onlineBar.color = "#fff";
-    onlineBar.command = "extension.bbbug.online";
+    onlineBar.color = "#aaa";
+    onlineBar.command = "extension.bbbug.user.online";
     onlineBar.show();
 
     musicBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
     musicBar.text = '$(clock) 加载中...';
-    musicBar.color = "#ff0";
+    musicBar.color = "#fff";
     musicBar.command = "extension.bbbug.song.menu";
     musicBar.show();
 
+    userBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+    userBar.text = '游客，请登录';
+    userBar.color = "#ff0";
+    userBar.command = "extension.bbbug.user.menu";
+    userBar.show();
+
+    bbbug.logout();
+
     vscode.commands.registerCommand('extension.bbbug.song.menu', function () {
-        if (!bbbug.data.userInfo) {
-            vscode.commands.executeCommand('extension.bbbug.user.login');
-            return;
+        let title = "没有歌曲啦，快去点歌吧~";
+        let menuList = ["我要点歌"];
+        if (bbbug.data.songInfo) {
+            title = bbbug.data.songInfo.song.name + "(" + bbbug.data.songInfo.song.singer + ") 点歌人: " + decodeURIComponent(bbbug.data.songInfo.user.user_name);
+            menuList = [
+                "我要点歌",
+                "播放列表",
+                bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
+            ];
         }
         vscode.window.showQuickPick(
-            [
-                "点歌",
-                "播放列表",
-                "切掉这首歌",
-                "不喜欢这首歌",
-            ],
+            menuList,
             {
-                placeHolder: '选择你想干嘛?'
+                placeHolder: title
             })
             .then(function (msg) {
                 switch (msg) {
-                    case '点歌':
+                    case '我要点歌':
+                        if (!bbbug.data.userInfo || bbbug.data.userInfo.user_id <= 0) {
+                            vscode.commands.executeCommand('extension.bbbug.user.login');
+                            return;
+                        }
                         bbbug.searchSong();
                         break;
                     case '切掉这首歌':
                     case '不喜欢这首歌':
-                        if (!bbbug.data.songInfo) {
-                            bbbug.showError("当前没有播放中的歌曲");
-                            return;
-                        }
-                        bbbug.request({
-                            url: "song/pass",
-                            data: {
-                                mid: bbbug.data.songInfo.song.mid,
-                                room_id: bbbug.data.roomInfo.room_id
-                            },
-                            success(res) {
-                                bbbug.showSuccess(res.data.msg);
-                            }
-                        });
+                        bbbug.passSong();
                         break;
                     case '播放列表':
                         bbbug.showPickedSongList();
@@ -104,12 +149,50 @@ exports.activate = function (context) {
                 }
             });
     });
+    vscode.commands.registerCommand('extension.bbbug.message.send', function () {
+        if (!bbbug.data.userInfo || bbbug.data.userInfo.user_id <= 0) {
+            vscode.commands.executeCommand('extension.bbbug.user.login');
+            return;
+        }
+        bbbug.sendMessage();
+    });
+    vscode.commands.registerCommand('extension.bbbug.user.menu', function () {
+        if (!bbbug.data.userInfo || bbbug.data.userInfo.user_id <= 0) {
+            vscode.commands.executeCommand('extension.bbbug.user.login');
+            return;
+        }
+        vscode.window.showQuickPick(
+            [
+                "我的房间",
+                "我的资料",
+                "退出登录",
+            ],
+            {
+                placeHolder: '个人中心...'
+            })
+            .then(function (msg) {
+                if (msg != undefined) {
+                    switch (msg) {
+                        case '我的房间':
+                            if (bbbug.data.userInfo.myRoom) {
+                                bbbug.joinRoomByRoomId(bbbug.data.userInfo.myRoom.room_id);
+                            } else {
+                                bbbug.showError("请先去bbbug.com创建一个私有房间后再进入！");
+                            }
+                            break;
+                        case '我的资料':
+                            break;
+                        default:
+                            bbbug.showError(msg + "即将上线，敬请期待");
+                    }
+                }
+            });
+    });
     vscode.commands.registerCommand('extension.bbbug.room.select', function () {
         let roomList = [];
         if (bbbug.data.userInfo.myRoom) {
             roomList.push(bbbug.data.userInfo.myRoom);
         }
-        console.log(123);
         bbbug.request({
             url: "room/hotRooms",
             success(res) {
@@ -145,9 +228,9 @@ exports.activate = function (context) {
         }
         vscode.window.showQuickPick(
             [
+                "聊天 Cmd(Alt)+F2",
                 "去大厅",
                 "切换房间",
-                "去我的房间",
             ],
             {
                 placeHolder: '你要去哪里？'
@@ -160,12 +243,12 @@ exports.activate = function (context) {
                     case '去大厅':
                         bbbug.joinRoomByRoomId(888);
                         break;
-                    case '去我的房间':
-                        if (bbbug.data.userInfo.myRoom) {
-                            bbbug.joinRoomByRoomId(bbbug.data.userInfo.myRoom.room_id);
-                        } else {
-                            bbbug.showError("请先去bbbug.com创建一个私有房间后再进入！");
+                    case "聊天 Cmd(Alt)+F2":
+                        if (!bbbug.data.userInfo || bbbug.data.userInfo.user_id <= 0) {
+                            vscode.commands.executeCommand('extension.bbbug.user.login');
+                            return;
                         }
+                        bbbug.sendMessage();
                         break;
                     default:
                 }
@@ -182,9 +265,15 @@ exports.activate = function (context) {
                     placeHolder: '请选择登录BBBUG的方式：'
                 })
                 .then(function (msg) {
+                    bbbug.data.form.login.user_account = false;
+                    bbbug.data.form.login.user_password = false;
                     switch (msg) {
                         case '使用密码登录':
                             bbbug.data.form.login.login_type = "password";
+                            vscode.commands.executeCommand('extension.bbbug.user.login');
+                            break;
+                        case '使用验证码登录':
+                            bbbug.data.form.login.login_type = "email";
                             vscode.commands.executeCommand('extension.bbbug.user.login');
                             break;
                         default:
@@ -205,7 +294,19 @@ exports.activate = function (context) {
                         if (bbbug.data.form.login.login_type == "password") {
                             vscode.commands.executeCommand('extension.bbbug.user.login');
                         } else {
-                            bbbug.sendEmail();
+                            bbbug.request({
+                                url: "sms/email",
+                                data: {
+                                    email: msg
+                                },
+                                success(res) {
+                                    vscode.commands.executeCommand('extension.bbbug.user.login');
+                                },
+                                error(res) {
+                                    bbbug.showError(res.msg);
+                                    vscode.commands.executeCommand('extension.bbbug.user.login');
+                                }
+                            });
                         }
                     }
                 });
@@ -215,7 +316,9 @@ exports.activate = function (context) {
             vscode.window.showInputBox(
                 {
                     password: true,
+                    ignoreFocusOut: true,
                     placeHolder: bbbug.data.form.login.login_type == "password" ? "请输入你的登录密码" : "请输入你收到的验证码",
+                    prompt: bbbug.data.form.login.login_type == "password" ? "" : "验证码已发送到你的邮箱,10分钟内有效"
                 }).then(function (msg) {
                     if (msg == undefined) {
                         bbbug.data.form.login.login_type = false;
@@ -228,13 +331,8 @@ exports.activate = function (context) {
                 });
             return;
         }
-        // bbbug.data.form.login.login_type = false;
-        // bbbug.data.form.login.user_account = false;
-        // bbbug.data.form.login.user_password = false;
     });
-
-
-    vscode.commands.registerCommand('extension.bbbug.online', function () {
+    vscode.commands.registerCommand('extension.bbbug.user.online', function () {
         if (!bbbug.data.roomInfo) {
             return;
         }
@@ -266,9 +364,6 @@ exports.activate = function (context) {
 
     });
 
-    vscode.commands.registerCommand('extension.bbbug', function () {
-        bbbug.init();
-    });
 };
 exports.deactivate = function () {
 };
@@ -278,7 +373,7 @@ let bbbug = {
         wssUrl: false,
         postBase: {
             access_token: "ad6baeaf725cf797a2f2ef790470a4e658a67623100000ad6baeaf725cf797a2f2ef790470a4e658a67623",
-            // access_token:false,
+            access_token: false,
             version: 10000,
             plat: "vscode",
         },
@@ -295,6 +390,14 @@ let bbbug = {
         userInfo: false,
         roomInfo: false,
         songInfo: false,
+        guestUserInfo: {
+            myRoom: false,
+            user_admin: false,
+            user_head: "images/nohead.jpg",
+            user_id: -1,
+            user_name: "Ghost",
+            access_token: "45af3cfe44942c956e026d5fd58f0feffbd3a237",
+        },
         form: {
             login: {
                 login_type: false,
@@ -310,11 +413,39 @@ let bbbug = {
         heartBeatTimer: false,
         forceStop: false,
     },
+    logout() {
+        this.data.userInfo = this.data.guestUserInfo;
+        this.data.postBase.access_token = this.data.guestUserInfo.access_token;
+        this.joinRoomByRoomId(888);
+        userBar.text = "游客，请登录";
+    },
     showSuccess(msg) {
-        vscode.window.showInformationMessage(msg);
+        vscode.window.showInformationMessage(msg || "操作成功");
     },
     showError(msg) {
-        vscode.window.showErrorMessage(msg);
+        vscode.window.showErrorMessage(msg || "发生一些错误，请稍候再试", {
+            modal: true,
+        });
+    },
+    passSong() {
+        let that = this;
+        if (!that.data.userInfo || that.data.userInfo.user_id <= 0) {
+            vscode.commands.executeCommand('extension.bbbug.user.login');
+            return;
+        }
+        if (!that.data.songInfo) {
+            that.showError("当前没有播放中的歌曲");
+            return;
+        }
+        that.request({
+            url: "song/pass",
+            data: {
+                mid: that.data.songInfo.song.mid,
+                room_id: that.data.roomInfo.room_id
+            },
+            success(res) {
+            }
+        });
     },
     showPickedSongList() {
         let that = this;
@@ -355,7 +486,6 @@ let bbbug = {
         vscode.window.showInputBox(
             {
                 placeHolder: '输入歌名/歌手/专辑搜索...',
-
             }).then(function (msg) {
                 if (msg != undefined) {
                     that.request({
@@ -391,7 +521,6 @@ let bbbug = {
                                                 room_id: that.data.roomInfo.room_id
                                             },
                                             success(res) {
-                                                that.showSuccess(res.data.msg);
                                                 that.searchSong();
                                             }
                                         });
@@ -408,12 +537,10 @@ let bbbug = {
     },
     request(_data = {}) {
         let that = this;
-        // _data.loading && (that.loading = true);
         console.log(_data);
         axios.post(that.data.apiUrl + (_data.url || ""), that.getPostData(_data.data || {}))
             .then(function (response) {
                 console.log(response);
-                // _data.loading && (that.loading = false);
                 switch (response.data.code) {
                     case 200:
                         if (_data.success) {
@@ -436,10 +563,7 @@ let bbbug = {
                                 .then(function (msg) {
                                     switch (msg) {
                                         case '重新登录':
-                                            that.data.form.login.login_type = false;
-                                            that.data.form.login.user_account = false;
-                                            that.data.form.login.user_password = false;
-                                            that.login();
+                                            vscode.commands.executeCommand('extension.bbbug.user.login');
                                             break;
                                         default:
                                     }
@@ -469,48 +593,29 @@ let bbbug = {
             url: "user/login",
             data: that.data.form.login,
             success(res) {
-                console.log(res.data.access_token);
                 that.data.postBase.access_token = res.data.access_token;
-
                 that.request({
                     url: "user/getmyinfo",
                     success(res) {
                         that.data.userInfo = res.data;
+                        userBar.text = "已登录:" + decodeURIComponent(res.data.user_name);
                         that.showSuccess("登录成功!");
                         that.joinRoomByRoomId(888);
                     }
                 });
+            }, error(res) {
+                that.showError(res.msg);
+                that.data.form.login.login_type = false;
+                that.data.form.login.user_account = false;
+                that.data.form.login.user_password = false;
             }
         });
     },
-    init() {
-        let that = this;
-        if (!that.data.postBase.access_token) {
-            that.data.form.login.user_account = false;
-            that.data.form.login.user_password = false;
-            that.login();
-            return;
-        }
-        if (!that.data.roomInfo) {
-            that.showRoomList();
-            return;
-        }
-
-    },
-    showRoomList() {
-        let that = this;
-        let roomList = [];
-
-    },
     messageList: [],
-    addSystemMessage(msg) {
-
-    },
     urldecode(data) {
         return decodeURIComponent(data);
     },
     showRightMessage(title, msg) {
-        let that = this;
         vscode.window.showInformationMessage(title);
     },
     showStatusMessage(title, msg) {
@@ -625,12 +730,11 @@ let bbbug = {
             console.log(error)
         }
     },
+    showRoomList() {
+        vscode.commands.executeCommand("extension.bbbug.room.select");
+    },
     joinRoomByRoomId(room_id, room_password = "") {
         let that = this;
-        if (room_id == that.data.roomInfo.room_id) {
-            that.showRoomList();
-            return;
-        }
         that.websocket.forceStop = true;
         if (that.websocket.isConnected) {
             console.log("等待退出房间");
@@ -692,9 +796,7 @@ let bbbug = {
             {
                 placeHolder: '说点什么吧...',
             }).then(function (msg) {
-                if (msg == undefined) {
-                    that.init();
-                } else {
+                if (msg != undefined) {
                     that.request({
                         url: "message/send",
                         data: {
