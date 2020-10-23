@@ -76,5 +76,10 @@
         "type": "git",
         "url": "https://github.com/sxei/vscode-plugin-demo"
     },
-    "homepage": "https://github.com/sxei/vscode-plugin-demo/blob/master/README.md"
+    "homepage": "https://github.com/sxei/vscode-plugin-demo/blob/master/README.md",
+    "dependencies": {
+        "axios": "^0.20.0",
+        "mplayer": "^2.1.0",
+        "websocket": "^1.0.32"
+    }
 }
