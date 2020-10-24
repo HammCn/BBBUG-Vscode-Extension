@@ -891,6 +891,9 @@ let bbbug = {
                     // that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 测回了一条消息。");
                     break;
                 case 'playSong':
+                    if (!obj.song || !obj.user) {
+                        return;
+                    }
                     that.data.songInfo = obj;
                     musicBar.text = "$(clock) 播放中:" + obj.song.name + "(" + obj.song.singer + ")";
                     playerPanel.webview.postMessage({
