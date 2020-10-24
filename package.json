@@ -1,5 +1,5 @@
 {
-    "name": "com.bbbug.vscode",
+    "name": "com-bbbug-vscode",
     "displayName": "BBBUG.COM",
     "description": "BBBUG.COM",
     "keywords": [
@@ -45,7 +45,35 @@
         "commands": [
             {
                 "command": "extension.bbbug",
-                "title": "BBBUG菜单"
+                "title": "BBBUG.COM"
+            },
+            {
+                "command": "extension.bbbug.message.send",
+                "title": "发送消息"
+            },
+            {
+                "command": "extension.bbbug.song.menu",
+                "title": "点歌&歌单"
+            },
+            {
+                "command": "extension.bbbug.room.menu",
+                "title": "聊天&换房"
+            },
+            {
+                "command": "extension.bbbug.user.menu",
+                "title": "资料&退出"
+            },
+            {
+                "command": "extension.bbbug.room.select",
+                "title": "房间推荐"
+            },
+            {
+                "command": "extension.bbbug.user.login",
+                "title": "用户登录"
+            },
+            {
+                "command": "extension.bbbug.user.online",
+                "title": "在线列表"
             }
         ],
         "keybindings": [
@@ -53,6 +81,12 @@
                 "command": "extension.bbbug",
                 "key": "alt+f1",
                 "mac": "cmd+f1",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "extension.bbbug.message.send",
+                "key": "alt+f2",
+                "mac": "cmd+f2",
                 "when": "editorTextFocus"
             }
         ]
