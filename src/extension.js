@@ -498,6 +498,9 @@ let bbbug = {
         this.data.postBase.access_token = this.data.guestUserInfo.access_token;
         this.joinRoomByRoomId(888);
         userBar.text = "游客，请登录";
+        this.data.form.login.login_type = false;
+        this.data.form.login.user_account = false;
+        this.data.form.login.user_account = false;
     },
     showSuccess(msg) {
         vscode.window.showInformationMessage(msg || "操作成功");
