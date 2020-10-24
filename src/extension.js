@@ -996,9 +996,12 @@ let bbbug = {
                             msg: encodeURIComponent(msg)
                         },
                         success(res) {
+                            that.data.message.at = false;
                             that.sendMessage();
                         }
                     });
+                } else {
+                    that.data.message.at = false;
                 }
             });
     }
