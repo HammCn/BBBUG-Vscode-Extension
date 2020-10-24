@@ -1,67 +1,58 @@
 const vscode = require('vscode');
-
 const axios = require('axios');
 let WebSocketClient = require('websocket').client;//获取websocketclient模块
 let roomBar, musicBar, onlineBar, userBar, playerPanel;
 exports.activate = function (context) {
-    playerPanel = vscode.window.createWebviewPanel(
-        'bbbug.player', // viewType
-        "播放器", // 视图标题
-        vscode.ViewColumn.Beside, // 显示在编辑器的哪个部位
-        {
-            enableScripts: true, // 启用JS，默认禁用
-            retainContextWhenHidden: true, // webview被隐藏时保持状态，避免被重置
-        }
-    );
-    playerPanel.webview.html = `
-    <html>
-        <title>播放器</title>
-        <head>
-            <style>
-                body,html{
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height:100%;
-                    outline: none;
-                    -webkit-text-size-adjust: none;
-                    -moz-text-size-adjust: none;
-                    -ms-text-size-adjust: none;
-                    text-size-adjust: none;
-                    -moz-user-select:none; 
-                    -webkit-user-select:none;
-                    -ms-user-select:none; 
-                    -khtml-user-select:none;
-                    user-select:none;
-                }
-                .info{
-                    text-align:center;
-                    text-shadow:1px 1px 1px #111;
-                    font-size:12px;
-                    color:#666;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="info">
-                播放中,请勿关闭
-            </div>
-            <script>
-            const audio = new Audio();
-            window.addEventListener('message', function(event){
-                switch(event.data.evt){
-                    case 'play':
-                        return;
-                        document.getElementById("audio").src = event.data.url;
-                        document.getElementById("audio").load();
-                        document.getElementById("audio").play();
-                        break;
-                    default:
+    vscode.commands.registerCommand('extension.bbbug', function () {
+        vscode.window.showQuickPick(
+            [
+                "我要聊天 Cmd(Alt)+F2",
+                "我要点歌",
+                "当前歌单",
+                bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
+                "切换房间",
+                "在线用户",
+                "重启播放器",
+                "退出登录",
+            ],
+            {
+                placeHolder: 'BBBUG.COM快捷指令'
+            })
+            .then(function (msg) {
+                if (msg != undefined) {
+                    switch (msg) {
+                        case '我要聊天 Cmd(Alt)+F2':
+                            bbbug.sendMessage();
+                            break;
+                        case '我要点歌':
+                            bbbug.searchSong();
+                            break;
+                        case '当前歌单':
+                            bbbug.showPickedSongList();
+                            break;
+                        case '切掉这首歌':
+                        case '不喜欢这首歌':
+                            bbbug.passSong();
+                            break;
+                        case '切换房间':
+                            bbbug.showRoomList();
+                            break;
+                        case '在线用户':
+                            vscode.commands.executeCommand('extension.bbbug.user.online');
+                            break;
+                        case '重启播放器':
+                            bbbug.initAudioPanel();
+                            bbbug.websocket.connection.send("getNowSong");
+                        case '退出登录':
+                            bbbug.logout();
+                            break;
+                        default:
+                            bbbug.showError(msg + "即将上线，敬请期待");
+                    }
                 }
             });
-            </script>
-        </body>
-    </html>`
+    });
+    bbbug.initAudioPanel();
     bbbug.websocket.client = new WebSocketClient();//创建客户端对象
     //连接失败执行
     bbbug.websocket.client.on('connectFailed',
@@ -135,6 +126,7 @@ exports.activate = function (context) {
                 "我要点歌",
                 "播放列表",
                 bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
+                "重启播放器"
             ];
         }
         vscode.window.showQuickPick(
@@ -157,6 +149,10 @@ exports.activate = function (context) {
                         break;
                     case '播放列表':
                         bbbug.showPickedSongList();
+                        break;
+                    case '重启播放器':
+                        bbbug.initAudioPanel();
+                        bbbug.websocket.connection.send("getNowSong");
                         break;
                     default:
                 }
@@ -437,6 +433,58 @@ let bbbug = {
         isConnected: false,
         heartBeatTimer: false,
         forceStop: false,
+    },
+    initAudioPanel() {
+        playerPanel = vscode.window.createWebviewPanel(
+            'bbbug.player', // viewType
+            "播放器", // 视图标题
+            vscode.ViewColumn.Beside, // 显示在编辑器的哪个部位
+            {
+                enableScripts: true, // 启用JS，默认禁用
+                retainContextWhenHidden: true, // webview被隐藏时保持状态，避免被重置
+            }
+        );
+        playerPanel.webview.html = `
+        <style>
+            body,html{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height:100%;
+                outline: none;
+                -webkit-text-size-adjust: none;
+                -moz-text-size-adjust: none;
+                -ms-text-size-adjust: none;
+                text-size-adjust: none;
+                -moz-user-select:none; 
+                -webkit-user-select:none;
+                -ms-user-select:none; 
+                -khtml-user-select:none;
+                user-select:none;
+            }
+            .info{
+                text-align:center;
+                text-shadow:1px 1px 1px #111;
+                font-size:12px;
+                color:#666;
+            }
+        </style>
+        <div class="info">
+            播放中,请勿关闭
+        </div>
+        <audio id="audio" src="" id="audio" autoplay="autoplay" control=""></audio>
+        <script>
+        const vscode = acquireVsCodeApi();
+        window.addEventListener('message', function(event){
+            switch(event.data.evt){
+                case 'play':
+                    audio.src = event.data.url;
+                    audio.play();
+                    break;
+                default:
+            }
+        });
+        </script>`;
     },
     logout() {
         this.data.userInfo = this.data.guestUserInfo;
