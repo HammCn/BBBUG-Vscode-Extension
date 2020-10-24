@@ -1,7 +1,7 @@
 {
-    "name": "com-bbbug-vscode",
+    "name": "vscode-bbbug-com",
     "displayName": "BBBUG.COM",
-    "description": "BBBUG.COM",
+    "description": "一个集音乐/聊天等一体的在线聊天室，支持多房间和创建私人房间，支持房间加密和切换房间模式。",
     "keywords": [
         "vscode",
         "plugin",
@@ -12,7 +12,7 @@
         "music",
         "划水"
     ],
-    "version": "1.0.1",
+    "version": "1.1.0",
     "publisher": "Hamm",
     "engines": {
         "vscode": "^1.27.0"
@@ -26,22 +26,6 @@
     ],
     "main": "./src/extension",
     "contributes": {
-        "configuration": {
-            "type": "object",
-            "title": "Code插件demo",
-            "properties": {
-                "vscodePluginDemo.yourName": {
-                    "type": "string",
-                    "default": "guest",
-                    "description": "你的名字"
-                },
-                "vscodePluginDemo.showTip": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "启动时显示自定义欢迎页"
-                }
-            }
-        },
         "commands": [
             {
                 "command": "extension.bbbug",
@@ -104,13 +88,13 @@
     },
     "license": "SEE LICENSE IN LICENSE.txt",
     "bugs": {
-        "url": "https://github.com/sxei/vscode-plugin-demo/issues"
+        "url": "https://bbbug.com"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/sxei/vscode-plugin-demo"
+        "url": "https://gitee.com/bbbug_com/bbbug_vscode_plugin"
     },
-    "homepage": "https://github.com/sxei/vscode-plugin-demo/blob/master/README.md",
+    "homepage": "https://bbbug.com",
     "dependencies": {
         "axios": "^0.20.0",
         "websocket": "^1.0.32"
