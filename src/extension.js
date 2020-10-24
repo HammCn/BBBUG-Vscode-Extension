@@ -1,8 +1,19 @@
 const vscode = require('vscode');
+
 const axios = require('axios');
 let WebSocketClient = require('websocket').client;//获取websocketclient模块
 let roomBar, musicBar, onlineBar;
 exports.activate = function (context) {
+    const playerPanel = vscode.window.createWebviewPanel(
+        'bbbug.player', // viewType
+        "BBBUG", // 视图标题
+        vscode.ViewColumn.One, // 显示在编辑器的哪个部位
+        {
+            enableScripts: true, // 启用JS，默认禁用
+            retainContextWhenHidden: true, // webview被隐藏时保持状态，避免被重置
+        }
+    );
+    playerPanel.webview.html = `<html><body></body></html>`
     bbbug.websocket.client = new WebSocketClient();//创建客户端对象
     //连接失败执行
     bbbug.websocket.client.on('connectFailed',
@@ -259,6 +270,16 @@ exports.activate = function (context) {
                         placeHolder: '在线用户列表'
                     })
                     .then(function (msg) {
+                        if (msg == undefined) {
+                            bbbug.data.message.at = false;
+                        } else {
+                            console.log(msg);
+                            bbbug.data.message.at = {
+                                user_id: msg.detail.replace("ID:", ""),
+                                user_name: msg.label
+                            };
+                            bbbug.sendMessage();
+                        }
                     });
             }
         });
@@ -290,7 +311,8 @@ let bbbug = {
         message: {
             success: false,
             statusTimer: false,
-            hideStatusTimer: false
+            hideStatusTimer: false,
+            at: false,
         },
         userInfo: false,
         roomInfo: false,
@@ -691,6 +713,7 @@ let bbbug = {
         vscode.window.showInputBox(
             {
                 placeHolder: '说点什么吧...',
+                prompt: that.data.message.at ? ("@" + decodeURIComponent(data.message.at.user_name)) : "",
             }).then(function (msg) {
                 if (msg == undefined) {
                     that.init();
@@ -701,7 +724,7 @@ let bbbug = {
                             where: 'channel',
                             to: that.data.roomInfo.room_id,
                             type: 'text',
-                            at: that.data.at || null,
+                            at: that.data.message.at || null,
                             msg: encodeURIComponent(msg)
                         },
                         success(res) {
