@@ -12,7 +12,7 @@
         "music",
         "划水"
     ],
-    "version": "1.1.4",
+    "version": "1.1.5",
     "publisher": "Hamm",
     "engines": {
         "vscode": "^1.27.0"
@@ -63,14 +63,8 @@
         "keybindings": [
             {
                 "command": "extension.bbbug",
-                "key": "alt+f1",
-                "mac": "cmd+f1",
-                "when": "true"
-            },
-            {
-                "command": "extension.bbbug.message.send",
-                "key": "alt+f2",
-                "mac": "cmd+f2",
+                "key": "alt+`",
+                "mac": "cmd+`",
                 "when": "true"
             }
         ]
