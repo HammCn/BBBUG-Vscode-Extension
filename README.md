@@ -18,11 +18,11 @@
 
 ### 安装后无声 必看
 
-请下载对应的 ffmepg 替换你 vscode 中的文件后重启vscode即可。下载地址： [https://npm.taobao.org/mirrors/electron/9.2.1/]
+请下载对应的 ffmepg 替换你 vscode 中的文件后重启vscode即可。下载地址： [https://npm.taobao.org/mirrors/electron/9.2.1/](https://npm.taobao.org/mirrors/electron/9.2.1/)
 
 ### 创建房间
 
-打开 [https://bbbug.com] 注册帐号后点右上角换房可创建自己的个人房间。
+打开 [https://bbbug.com](https://bbbug.com) 注册帐号后点右上角换房可创建自己的个人房间。
 
 > 创建房间后插件端请重新登录,且插件端只在歌曲相关类型房间中可点歌。
 

@@ -9,6 +9,7 @@ exports.activate = function (context) {
                 "我要聊天 Cmd(Alt)+F2",
                 "我要点歌",
                 "当前歌单",
+                "我的歌单",
                 bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
                 "切换房间",
                 "在线用户",
@@ -29,6 +30,9 @@ exports.activate = function (context) {
                             break;
                         case '当前歌单':
                             bbbug.showPickedSongList();
+                            break;
+                        case '我的歌单':
+                            bbbug.showMySongList();
                             break;
                         case '切掉这首歌':
                         case '不喜欢这首歌':
@@ -173,7 +177,7 @@ exports.activate = function (context) {
         vscode.window.showQuickPick(
             [
                 "我的房间",
-                "我的资料",
+                "我的歌单",
                 "退出登录",
             ],
             {
@@ -191,6 +195,9 @@ exports.activate = function (context) {
                             break;
                         case '退出登录':
                             bbbug.logout();
+                            break;
+                        case '我的歌单':
+                            bbbug.showMySongList();
                             break;
                         default:
                             bbbug.showError(msg + "即将上线，敬请期待");
@@ -520,6 +527,86 @@ let bbbug = {
             }
         });
     },
+    showMySongList() {
+        let that = this;
+        if (!that.data.userInfo || that.data.userInfo.user_id <= 0) {
+            vscode.commands.executeCommand('extension.bbbug.user.login');
+            return;
+        }
+        that.request({
+            url: "song/mySongList",
+            data: {
+                room_id: that.data.roomInfo.room_id
+            },
+            success(res) {
+                if (res.data.length == 0) {
+                    that.showError("你还没点过歌呢，快去点歌吧~");
+                    return;
+                }
+                let songNameList = [];
+                for (let i in res.data) {
+                    songNameList.push({
+                        label: res.data[i].name + "(" + res.data[i].singer + ")",
+                        description: "点过: " + decodeURI(res.data[i].played) + "次",
+                        detail: "ID:" + res.data[i].mid
+                    });
+                }
+                vscode.window.showQuickPick(
+                    songNameList,
+                    {
+                        placeHolder: '这是你最近点过的50首歌...'
+                    })
+                    .then(function (msg) {
+                        if (msg != undefined) {
+                            let mid = msg.detail.replace("ID:", "");
+                            let menuList = [
+                                "点这首歌",
+                            ];
+                            if (bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id) {
+                                menuList = [
+                                    "点这首歌",
+                                    "删除这首歌",
+                                ];
+                            }
+                            vscode.window.showQuickPick(
+                                menuList,
+                                {
+                                    placeHolder: msg.label + " " + msg.description
+                                })
+                                .then(function (msg) {
+                                    switch (msg) {
+                                        case '点这首歌':
+                                            that.request({
+                                                url: "song/addSong",
+                                                data: {
+                                                    mid: mid,
+                                                    room_id: that.data.roomInfo.room_id
+                                                },
+                                                success(res) {
+                                                    that.showMySongList();
+                                                }
+                                            });
+                                            break;
+                                        case '删除这首歌':
+                                            that.request({
+                                                url: "song/deleteMySong",
+                                                data: {
+                                                    mid: mid,
+                                                    room_id: that.data.roomInfo.room_id
+                                                },
+                                                success(res) {
+                                                    that.showMySongList();
+                                                }
+                                            });
+                                            break;
+                                        default:
+                                    }
+                                });
+                        }
+                    });
+            }
+        });
+    },
     showPickedSongList() {
         let that = this;
         that.request({
@@ -548,7 +635,49 @@ let bbbug = {
                     .then(function (msg) {
                         if (msg != undefined) {
                             let mid = msg.detail.replace("ID:", "");
-
+                            let menuList = [
+                                "置顶这首歌",
+                            ];
+                            if (bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id) {
+                                menuList = [
+                                    "置顶这首歌",
+                                    "移除这首歌",
+                                ];
+                            }
+                            vscode.window.showQuickPick(
+                                menuList,
+                                {
+                                    placeHolder: msg.label + " " + msg.description
+                                })
+                                .then(function (msg) {
+                                    switch (msg) {
+                                        case '置顶这首歌':
+                                            that.request({
+                                                url: "song/push",
+                                                data: {
+                                                    mid: mid,
+                                                    room_id: that.data.roomInfo.room_id
+                                                },
+                                                success(res) {
+                                                    that.showPickedSongList();
+                                                }
+                                            });
+                                            break;
+                                        case '移除这首歌':
+                                            that.request({
+                                                url: "song/remove",
+                                                data: {
+                                                    mid: mid,
+                                                    room_id: that.data.roomInfo.room_id
+                                                },
+                                                success(res) {
+                                                    that.showPickedSongList();
+                                                }
+                                            });
+                                            break;
+                                        default:
+                                    }
+                                });
                         }
                     });
             }
@@ -688,30 +817,8 @@ let bbbug = {
     urldecode(data) {
         return decodeURIComponent(data);
     },
-    showRightMessage(title, msg) {
-        vscode.window.showInformationMessage(title);
-    },
-    showStatusMessage(title, msg) {
-        let that = this;
-        vscode.window.showInformationMessage(title + msg);
-        return;
-        clearTimeout(that.data.message.hideStatusTimer);
-        that.data.message.hideStatusTimer = setTimeout(function () {
-            clearTimeout(that.data.message.statusTimer);
-            vscode.window.setStatusBarMessage("");
-        }, 5000);
-        that.animationTask(title, "________________" + msg + "________________");
-    },
-    animationTask(title, msg) {
-        let that = this;
-        clearTimeout(that.data.message.statusTimer);
-        that.data.message.statusTimer = setTimeout(function () {
-            let arr = msg.split("");
-            arr.push(arr.shift());
-            msg = arr.join("");
-            vscode.window.setStatusBarMessage(title + " " + msg);
-            that.animationTask(title, msg);
-        }, 100);
+    showRightMessage(msg) {
+        vscode.window.showInformationMessage(msg);
     },
     messageController(data) {
         let that = this;
@@ -728,15 +835,17 @@ let bbbug = {
                 case 'touch':
                     break;
                 case 'text':
-                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 说: " + decodeURIComponent(obj.content));
                     if (obj.at) {
-                        console.log(that.data.userInfo);
                         if (obj.at.user_id == that.data.userInfo.user_id) {
                             //被@
-                            console.log(decodeURIComponent(obj.at.user_name) + "@了你: " + decodeURIComponent(obj.content));
-                            vscode.window.showInformationMessage(decodeURIComponent(obj.at.user_name) + "@了你: " + decodeURIComponent(obj.content));
+                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + "@了你: " + decodeURIComponent(obj.content));
+                        } else {
+                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 说: @" + decodeURIComponent(obj.at.user_name) + " " + decodeURIComponent(obj.content));
                         }
+
+                        return;
                     }
+                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 说: " + decodeURIComponent(obj.content));
                     break;
                 case 'link':
                 case 'img':
@@ -751,17 +860,20 @@ let bbbug = {
                     if (obj.at) {
                         if (obj.at.user_id == that.data.userInfo.user_id) {
                             //有人送你一首歌
-                            vscode.window.showInformationMessage(decodeURIComponent(obj.at.user_name) + "送了你歌: 《" + obj.song.name + "》(" + obj.song.singer + ")");
+                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 送歌给你: 《" + obj.song.name + "》(" + obj.song.singer + ")");
+                        } else {
+                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 送歌给 " + decodeURIComponent(obj.at.user_name) + " : 《" + obj.song.name + "》(" + obj.song.singer + ")");
                         }
+                        return;
                     }
 
-                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 点歌: 《" + obj.song.name + "》(" + obj.song.singer + ")");
+                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 点了一首: 《" + obj.song.name + "》(" + obj.song.singer + ")");
                     break;
                 case 'push':
-                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 置顶歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")");
+                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 置顶了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")");
                     break;
                 case 'removeSong':
-                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 移出歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")");
+                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 移除了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")");
                     break;
                 case 'pass':
                     that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 切掉了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")");
@@ -770,10 +882,10 @@ let bbbug = {
                     that.showRightMessage(decodeURIComponent(obj.user.user_name) + " PASS了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")");
                     break;
                 case 'all':
-                    that.showRightMessage("系统消息: ", obj.content);
+                    that.showRightMessage("系统消息: " + obj.content);
                     break;
                 case 'back':
-                    that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 测回了一条消息: ", "哈哈哈我就是不告诉你我说了啥");
+                    // that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 测回了一条消息。");
                     break;
                 case 'playSong':
                     that.data.songInfo = obj;
@@ -871,7 +983,7 @@ let bbbug = {
         vscode.window.showInputBox(
             {
                 placeHolder: '说点什么吧...',
-                prompt: that.data.message.at ? ("@" + decodeURIComponent(data.message.at.user_name)) : "",
+                prompt: that.data.message.at ? ("@" + decodeURIComponent(that.data.message.at.user_name)) : "",
             }).then(function (msg) {
                 if (msg != undefined) {
                     that.request({
