@@ -14,11 +14,11 @@
 
 ### 使用方式
 
-安装插件后，可操作状态栏，或者快捷键 ```Command/Alt + F1``` 打开主菜单， ```Command/Alt + F2``` 快速聊天。
+安装插件后，可操作状态栏，或者快捷键 ```Command/Alt + ` ``` 打开主菜单。
 
 ### 安装后无声 必看
 
-请下载对应vscode中Electron版本的的 ffmepg， 并替换你 vscode 中的ffmepg文件后重启vscode即可。下载地址： [https://npm.taobao.org/mirrors/electron/](https://npm.taobao.org/mirrors/electron/)
+请下载对应vscode中Electron版本的的 ffmpeg， 并替换你 vscode 中的ffmpeg文件后重启vscode即可。下载地址： [https://npm.taobao.org/mirrors/electron/](https://npm.taobao.org/mirrors/electron/)
 
 ### 创建房间
 

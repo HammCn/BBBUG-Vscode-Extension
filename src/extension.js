@@ -6,11 +6,11 @@ exports.activate = function (context) {
     vscode.commands.registerCommand('extension.bbbug', function () {
         vscode.window.showQuickPick(
             [
-                "我要聊天 Cmd(Alt)+F2",
+                "我要聊天",
                 "我要点歌",
                 "当前歌单",
                 "我的歌单",
-                bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
+                (bbbug.data.userInfo && bbbug.data.userInfo.user_admin) || (bbbug.data.roomInfo && bbbug.data.roomInfo.room_user == bbbug.data.userInfo.user_id) || (bbbug.data.songInfo && bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id) ? "切掉这首歌" : "不喜欢这首歌",
                 "切换房间",
                 "在线用户",
                 "重启播放器",
@@ -22,7 +22,7 @@ exports.activate = function (context) {
             .then(function (msg) {
                 if (msg != undefined) {
                     switch (msg) {
-                        case '我要聊天 Cmd(Alt)+F2':
+                        case '我要聊天':
                             bbbug.sendMessage();
                             break;
                         case '我要点歌':
@@ -125,12 +125,12 @@ exports.activate = function (context) {
     vscode.commands.registerCommand('extension.bbbug.song.menu', function () {
         let title = "没有歌曲啦，快去点歌吧~";
         let menuList = ["我要点歌"];
-        if (bbbug.data.songInfo) {
+        if (bbbug.data.songInfo && bbbug.data.songInfo.song && bbbug.data.songInfo.user) {
             title = bbbug.data.songInfo.song.name + "(" + bbbug.data.songInfo.song.singer + ") 点歌人: " + decodeURIComponent(bbbug.data.songInfo.user.user_name);
             menuList = [
                 "我要点歌",
                 "播放列表",
-                bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id ? "切掉这首歌" : "不喜欢这首歌",
+                (bbbug.data.userInfo && bbbug.data.userInfo.user_admin) || (bbbug.data.roomInfo && bbbug.data.roomInfo.room_user == bbbug.data.userInfo.user_id) || (bbbug.data.songInfo && bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id) ? "切掉这首歌" : "不喜欢这首歌",
                 "重启播放器"
             ];
         }
@@ -246,7 +246,7 @@ exports.activate = function (context) {
         }
         vscode.window.showQuickPick(
             [
-                "聊天 Cmd(Alt)+F2",
+                "聊天",
                 "去大厅",
                 "切换房间",
             ],
@@ -261,7 +261,7 @@ exports.activate = function (context) {
                     case '去大厅':
                         bbbug.joinRoomByRoomId(888);
                         break;
-                    case "聊天 Cmd(Alt)+F2":
+                    case "聊天":
                         if (!bbbug.data.userInfo || bbbug.data.userInfo.user_id <= 0) {
                             vscode.commands.executeCommand('extension.bbbug.user.login');
                             return;
@@ -573,13 +573,8 @@ let bbbug = {
                             let mid = msg.detail.replace("ID:", "");
                             let menuList = [
                                 "点这首歌",
+                                "删除这首歌",
                             ];
-                            if (bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id) {
-                                menuList = [
-                                    "点这首歌",
-                                    "删除这首歌",
-                                ];
-                            }
                             vscode.window.showQuickPick(
                                 menuList,
                                 {
@@ -650,7 +645,7 @@ let bbbug = {
                             let menuList = [
                                 "置顶这首歌",
                             ];
-                            if (bbbug.data.userInfo.user_admin || bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id) {
+                            if ((bbbug.data.userInfo && bbbug.data.userInfo.user_admin) || (bbbug.data.roomInfo && bbbug.data.roomInfo.room_user == bbbug.data.userInfo.user_id) || (bbbug.data.songInfo && bbbug.data.songInfo.user.user_id == bbbug.data.userInfo.user_id)) {
                                 menuList = [
                                     "置顶这首歌",
                                     "移除这首歌",
@@ -900,6 +895,9 @@ let bbbug = {
                     // that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 测回了一条消息。");
                     break;
                 case 'playSong':
+                    if (!obj.song || !obj.user) {
+                        return;
+                    }
                     that.data.songInfo = obj;
                     musicBar.text = "$(clock) 播放中:" + obj.song.name + "(" + obj.song.singer + ")";
                     playerPanel.webview.postMessage({
