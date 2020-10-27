@@ -402,6 +402,7 @@ exports.activate = function (context) {
                 if (msg != undefined) {
                     switch (msg.description) {
                         case 'send':
+                            bbbug.sendMessage();
                             break;
                         default:
                         //TODO 这里可以回复消息
