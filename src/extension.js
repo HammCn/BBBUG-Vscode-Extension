@@ -70,6 +70,7 @@ exports.activate = function (context) {
 
     bbbug.websocket.client.on('connect', function (connection) {
         bbbug.websocket.forceStop = false;
+        bbbug.websocketHeartBeat();
         //连接错误抛出
         bbbug.websocket.isConnected = true;
         bbbug.websocket.connection = connection;
@@ -392,8 +393,7 @@ exports.activate = function (context) {
     });
 
 };
-exports.deactivate = function () {
-};
+
 let bbbug = {
     data: {
         apiUrl: "https://api.bbbug.com/api/",
@@ -440,6 +440,15 @@ let bbbug = {
         isConnected: false,
         heartBeatTimer: false,
         forceStop: false,
+    },
+    websocketHeartBeat() {
+        let that = this;
+        if (that.websocket.isConnected) {
+            that.websocket.connection.send("heartBeat");
+        }
+        setTimeout(function () {
+            that.websocketHeartBeat();
+        }, 10000);
     },
     initAudioPanel() {
         playerPanel = vscode.window.createWebviewPanel(
