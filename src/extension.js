@@ -1,7 +1,10 @@
 const vscode = require('vscode');
 const axios = require('axios');
+const { resolve } = require('path')
+const fs = require('fs')
+
 let WebSocketClient = require('websocket').client;//获取websocketclient模块
-let roomBar, musicBar, onlineBar, userBar, playerPanel;
+let roomBar, musicBar, onlineBar, userBar, playerPanel, msgBar;
 exports.activate = function (context) {
     vscode.commands.registerCommand('extension.bbbug', function () {
         vscode.window.showQuickPick(
@@ -116,11 +119,36 @@ exports.activate = function (context) {
 
     userBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
     userBar.text = '游客，请登录';
-    userBar.color = "#ff0";
+    userBar.color = "#fff";
     userBar.command = "extension.bbbug.user.menu";
     userBar.show();
 
-    bbbug.logout();
+    msgBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
+    msgBar.text = '消息中心';
+    msgBar.color = "#fff";
+    msgBar.command = "extension.bbbug.msg.menu";
+    msgBar.show();
+
+
+
+    let _access_token = fs.readFileSync(__dirname + '/access_token.bbbug');
+    if (_access_token) {
+        bbbug.data.postBase.access_token = _access_token.toString();
+        bbbug.request({
+            url: "user/getmyinfo",
+            success(res) {
+                console.log(res);
+                bbbug.data.userInfo = res.data;
+                userBar.text = "已登录:" + decodeURIComponent(res.data.user_name);
+                bbbug.showSuccess("登录成功!");
+                bbbug.joinRoomByRoomId(888);
+            }, error(res) {
+                bbbug.logout();
+            }
+        });
+    } else {
+        bbbug.logout();
+    }
 
     vscode.commands.registerCommand('extension.bbbug.song.menu', function () {
         let title = "没有歌曲啦，快去点歌吧~";
@@ -238,6 +266,149 @@ exports.activate = function (context) {
                     });
             }
         });
+    });
+    vscode.commands.registerCommand('extension.bbbug.msg.menu', function () {
+        let msgList = [];
+        console.log(bbbug.messageList);
+        msgList.push({
+            label: "我要发消息",
+            description: "send",
+            detail: "选中这里并回车可快速发消息",
+        });
+        for (let index in bbbug.messageList) {
+            let obj = bbbug.messageList[index];
+            console.log(obj);
+            switch (obj.type) {
+                case 'touch':
+                    msgList.push({
+                        label: decodeURIComponent(obj.user.user_name),
+                        description: obj.type,
+                        detail: "摸了摸 " + decodeURIComponent(obj.at.user_name) + obj.at.user_touchtip,
+                    });
+                    break;
+                case 'text':
+                    if (obj.at) {
+                        msgList.push({
+                            label: decodeURIComponent(obj.user.user_name) + " 说：",
+                            description: obj.type,
+                            detail: "@" + decodeURIComponent(obj.at.user_name) + " " + decodeURIComponent(obj.content),
+                        });
+                    } else {
+                        msgList.push({
+                            label: decodeURIComponent(obj.user.user_name) + " 说：",
+                            description: obj.type,
+                            detail: decodeURIComponent(obj.content),
+                        });
+                    }
+                    break;
+                case 'link':
+                    break;
+                case 'img':
+                    msgList.push({
+                        label: decodeURIComponent(obj.user.user_name) + " 发了一张图：",
+                        description: obj.type,
+                        detail: decodeURIComponent(obj.resource),
+                    });
+                    break;
+                case 'system':
+                    msgList.push({
+                        label: "系统消息",
+                        description: obj.type,
+                        detail: obj.content,
+                    });
+                    break;
+                case 'jump':
+                    break;
+                case 'join':
+                    msgList.push({
+                        label: "进入房间提醒",
+                        description: obj.type,
+                        detail: obj.content,
+                    });
+                    break;
+                case 'addSong':
+                    msgList.push({
+                        label: "点歌消息",
+                        description: obj.type,
+                        detail: decodeURIComponent(obj.user.user_name) + " 点了一首: 《" + obj.song.name + "》(" + obj.song.singer + ")",
+                    });
+                    break;
+                case 'push':
+                    msgList.push({
+                        label: "置顶歌曲",
+                        description: obj.type,
+                        detail: decodeURIComponent(obj.user.user_name) + " 置顶了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")",
+                    });
+                    break;
+                case 'removeSong':
+                    msgList.push({
+                        label: "移除歌曲",
+                        description: obj.type,
+                        detail: (decodeURIComponent(obj.user.user_name) + " 移除了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
+                    });
+                    break;
+                case 'pass':
+                    msgList.push({
+                        label: "切掉歌曲",
+                        description: obj.type,
+                        detail: (decodeURIComponent(obj.user.user_name) + " 切掉了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
+                    });
+                    break;
+                case 'passGame':
+                    msgList.push({
+                        label: "Pass了歌曲",
+                        description: obj.type,
+                        detail: (decodeURIComponent(obj.user.user_name) + " PASS了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
+                    });
+                    break;
+                case 'all':
+                    msgList.push({
+                        label: "系统消息",
+                        description: obj.type,
+                        detail: obj.content,
+                    });
+                    break;
+                case 'back':
+                    break;
+                case 'playSong':
+                    break;
+                case 'online':
+                    break;
+                case 'roomUpdate':
+                    break;
+                case 'game_music_success':
+                    msgList.push({
+                        label: "猜歌结果",
+                        description: obj.type,
+                        detail: "恭喜 " + decodeURIComponent(obj.user.user_name) + " 猜中了《" + obj.song.name + "》(" + obj.song.singer + "),30s后开始新一轮游戏",
+                    });
+                    break;
+                case 'story':
+                    msgList.push({
+                        label: "正在播放声音",
+                        description: obj.type,
+                        detail: '有声书正在播放声音《' + obj.story.name + '》(' + obj.story.part + ')',
+                    });
+
+                    break;
+                default:
+            }
+        }
+        vscode.window.showQuickPick(
+            msgList,
+            {
+                placeHolder: '消息列表'
+            })
+            .then(function (msg) {
+                if (msg != undefined) {
+                    switch (msg.description) {
+                        case 'send':
+                            break;
+                        default:
+                        //TODO 这里可以回复消息
+                    }
+                }
+            });
     });
     vscode.commands.registerCommand('extension.bbbug.room.menu', function () {
         if (!bbbug.data.userInfo) {
@@ -412,7 +583,7 @@ let bbbug = {
         message: {
             success: false,
             statusTimer: false,
-            hideStatusTimer: false,
+            hideMessageTimer: false,
             at: false,
         },
         userInfo: false,
@@ -805,6 +976,13 @@ let bbbug = {
             data: that.data.form.login,
             success(res) {
                 that.data.postBase.access_token = res.data.access_token;
+                fs.writeFile(__dirname + "/access_token.bbbug", res.data.access_token, function (error) {
+                    if (error) {
+                        console.log('写入失败')
+                    } else {
+                        console.log('写入成功了')
+                    }
+                });
                 that.request({
                     url: "user/getmyinfo",
                     success(res) {
@@ -827,7 +1005,15 @@ let bbbug = {
         return decodeURIComponent(data);
     },
     showRightMessage(msg) {
-        vscode.window.showInformationMessage(msg);
+        // vscode.window.showInformationMessage(msg);
+        let that = this;
+        msgBar.text = msg;
+        msgBar.color = "#ff0";
+        clearTimeout(that.data.message.hideMessageTimer);
+        that.data.message.hideMessageTimer = setTimeout(function () {
+            msgBar.text = '消息中心';
+            msgBar.color = "#fff";
+        }, 5000);
     },
     messageController(data) {
         let that = this;
@@ -839,15 +1025,27 @@ let bbbug = {
                 obj = JSON.parse(data);
             }
             obj.time = parseInt(new Date().valueOf() / 1000);
-            console.log(obj);
+            if (that.messageList.length > 50) {
+                that.messageList.pop();
+            }
+            that.messageList.unshift(obj);
             switch (obj.type) {
                 case 'touch':
+                    if (obj.at) {
+                        if (obj.at.user_id == that.data.userInfo.user_id) {
+                            //被@
+                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 摸了摸你" + obj.at.user_touchtip);
+                        } else {
+                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 摸了摸" + decodeURIComponent(obj.at.user_name) + decodeURIComponent(obj.at.user_touchtip));
+                        }
+                        return;
+                    }
                     break;
                 case 'text':
                     if (obj.at) {
                         if (obj.at.user_id == that.data.userInfo.user_id) {
                             //被@
-                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + "@了你: " + decodeURIComponent(obj.content));
+                            vscode.window.showInformationMessage(decodeURIComponent(obj.user.user_name) + "@了你: " + decodeURIComponent(obj.content));
                         } else {
                             that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 说: @" + decodeURIComponent(obj.at.user_name) + " " + decodeURIComponent(obj.content));
                         }
@@ -869,7 +1067,7 @@ let bbbug = {
                     if (obj.at) {
                         if (obj.at.user_id == that.data.userInfo.user_id) {
                             //有人送你一首歌
-                            that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 送歌给你: 《" + obj.song.name + "》(" + obj.song.singer + ")");
+                            vscode.window.showInformationMessage(decodeURIComponent(obj.user.user_name) + " 送歌给你: 《" + obj.song.name + "》(" + obj.song.singer + ")");
                         } else {
                             that.showRightMessage(decodeURIComponent(obj.user.user_name) + " 送歌给 " + decodeURIComponent(obj.at.user_name) + " : 《" + obj.song.name + "》(" + obj.song.singer + ")");
                         }
