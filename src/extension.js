@@ -129,9 +129,8 @@ exports.activate = function (context) {
     msgBar.command = "extension.bbbug.msg.menu";
     msgBar.show();
 
-
-
-    let _access_token = fs.readFileSync(__dirname + '/access_token.bbbug');
+    let fileName = __dirname + '/access_token.bbbug';
+    let _access_token = fs.existsSync(fileName) ? fs.readFileSync(fileName) : false;
     if (_access_token) {
         bbbug.data.postBase.access_token = _access_token.toString();
         bbbug.request({
