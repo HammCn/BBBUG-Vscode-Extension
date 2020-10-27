@@ -5,6 +5,7 @@ const fs = require('fs')
 
 let WebSocketClient = require('websocket').client;//获取websocketclient模块
 let roomBar, musicBar, onlineBar, userBar, playerPanel, msgBar;
+let msgList = [];
 exports.activate = function (context) {
     vscode.commands.registerCommand('extension.bbbug', function () {
         vscode.window.showQuickPick(
@@ -267,132 +268,7 @@ exports.activate = function (context) {
         });
     });
     vscode.commands.registerCommand('extension.bbbug.msg.menu', function () {
-        let msgList = [];
-        console.log(bbbug.messageList);
-        msgList.push({
-            label: "我要发消息",
-            description: "send",
-            detail: "选中这里并回车可快速发消息",
-        });
-        for (let index in bbbug.messageList) {
-            let obj = bbbug.messageList[index];
-            console.log(obj);
-            switch (obj.type) {
-                case 'touch':
-                    msgList.push({
-                        label: decodeURIComponent(obj.user.user_name),
-                        description: obj.type,
-                        detail: "摸了摸 " + decodeURIComponent(obj.at.user_name) + obj.at.user_touchtip,
-                    });
-                    break;
-                case 'text':
-                    if (obj.at) {
-                        msgList.push({
-                            label: decodeURIComponent(obj.user.user_name) + " 说：",
-                            description: obj.type,
-                            detail: "@" + decodeURIComponent(obj.at.user_name) + " " + decodeURIComponent(obj.content),
-                        });
-                    } else {
-                        msgList.push({
-                            label: decodeURIComponent(obj.user.user_name) + " 说：",
-                            description: obj.type,
-                            detail: decodeURIComponent(obj.content),
-                        });
-                    }
-                    break;
-                case 'link':
-                    break;
-                case 'img':
-                    msgList.push({
-                        label: decodeURIComponent(obj.user.user_name) + " 发了一张图：",
-                        description: obj.type,
-                        detail: decodeURIComponent(obj.resource),
-                    });
-                    break;
-                case 'system':
-                    msgList.push({
-                        label: "系统消息",
-                        description: obj.type,
-                        detail: obj.content,
-                    });
-                    break;
-                case 'jump':
-                    break;
-                case 'join':
-                    msgList.push({
-                        label: "进入房间提醒",
-                        description: obj.type,
-                        detail: obj.content,
-                    });
-                    break;
-                case 'addSong':
-                    msgList.push({
-                        label: "点歌消息",
-                        description: obj.type,
-                        detail: decodeURIComponent(obj.user.user_name) + " 点了一首: 《" + obj.song.name + "》(" + obj.song.singer + ")",
-                    });
-                    break;
-                case 'push':
-                    msgList.push({
-                        label: "置顶歌曲",
-                        description: obj.type,
-                        detail: decodeURIComponent(obj.user.user_name) + " 置顶了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")",
-                    });
-                    break;
-                case 'removeSong':
-                    msgList.push({
-                        label: "移除歌曲",
-                        description: obj.type,
-                        detail: (decodeURIComponent(obj.user.user_name) + " 移除了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
-                    });
-                    break;
-                case 'pass':
-                    msgList.push({
-                        label: "切掉歌曲",
-                        description: obj.type,
-                        detail: (decodeURIComponent(obj.user.user_name) + " 切掉了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
-                    });
-                    break;
-                case 'passGame':
-                    msgList.push({
-                        label: "Pass了歌曲",
-                        description: obj.type,
-                        detail: (decodeURIComponent(obj.user.user_name) + " PASS了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
-                    });
-                    break;
-                case 'all':
-                    msgList.push({
-                        label: "系统消息",
-                        description: obj.type,
-                        detail: obj.content,
-                    });
-                    break;
-                case 'back':
-                    break;
-                case 'playSong':
-                    break;
-                case 'online':
-                    break;
-                case 'roomUpdate':
-                    break;
-                case 'game_music_success':
-                    msgList.push({
-                        label: "猜歌结果",
-                        description: obj.type,
-                        detail: "恭喜 " + decodeURIComponent(obj.user.user_name) + " 猜中了《" + obj.song.name + "》(" + obj.song.singer + "),30s后开始新一轮游戏",
-                    });
-                    break;
-                case 'story':
-                    msgList.push({
-                        label: "正在播放声音",
-                        description: obj.type,
-                        detail: '有声书正在播放声音《' + obj.story.name + '》(' + obj.story.part + ')',
-                    });
-
-                    break;
-                default:
-            }
-        }
+        bbbug.updateMessageList();
         vscode.window.showQuickPick(
             msgList,
             {
@@ -1015,6 +891,133 @@ let bbbug = {
             msgBar.color = "#fff";
         }, 5000);
     },
+    updateMessageList() {
+        msgList = [];
+        msgList.push({
+            label: "我要发消息",
+            description: "send",
+            detail: "选中这里并回车可快速发消息",
+        });
+        for (let index in bbbug.messageList) {
+            let obj = bbbug.messageList[index];
+            console.log(obj);
+            switch (obj.type) {
+                case 'touch':
+                    msgList.push({
+                        label: decodeURIComponent(obj.user.user_name),
+                        description: obj.type,
+                        detail: "摸了摸 " + decodeURIComponent(obj.at.user_name) + obj.at.user_touchtip,
+                    });
+                    break;
+                case 'text':
+                    if (obj.at) {
+                        msgList.push({
+                            label: decodeURIComponent(obj.user.user_name) + " 说：",
+                            description: obj.type,
+                            detail: "@" + decodeURIComponent(obj.at.user_name) + " " + decodeURIComponent(obj.content),
+                        });
+                    } else {
+                        msgList.push({
+                            label: decodeURIComponent(obj.user.user_name) + " 说：",
+                            description: obj.type,
+                            detail: decodeURIComponent(obj.content),
+                        });
+                    }
+                    break;
+                case 'link':
+                    break;
+                case 'img':
+                    msgList.push({
+                        label: decodeURIComponent(obj.user.user_name) + " 发了一张图：",
+                        description: obj.type,
+                        detail: decodeURIComponent(obj.resource),
+                    });
+                    break;
+                case 'system':
+                    msgList.push({
+                        label: "系统消息",
+                        description: obj.type,
+                        detail: obj.content,
+                    });
+                    break;
+                case 'jump':
+                    break;
+                case 'join':
+                    msgList.push({
+                        label: "进入房间提醒",
+                        description: obj.type,
+                        detail: obj.content,
+                    });
+                    break;
+                case 'addSong':
+                    msgList.push({
+                        label: "点歌消息",
+                        description: obj.type,
+                        detail: decodeURIComponent(obj.user.user_name) + " 点了一首: 《" + obj.song.name + "》(" + obj.song.singer + ")",
+                    });
+                    break;
+                case 'push':
+                    msgList.push({
+                        label: "置顶歌曲",
+                        description: obj.type,
+                        detail: decodeURIComponent(obj.user.user_name) + " 置顶了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")",
+                    });
+                    break;
+                case 'removeSong':
+                    msgList.push({
+                        label: "移除歌曲",
+                        description: obj.type,
+                        detail: (decodeURIComponent(obj.user.user_name) + " 移除了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
+                    });
+                    break;
+                case 'pass':
+                    msgList.push({
+                        label: "切掉歌曲",
+                        description: obj.type,
+                        detail: (decodeURIComponent(obj.user.user_name) + " 切掉了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
+                    });
+                    break;
+                case 'passGame':
+                    msgList.push({
+                        label: "Pass了歌曲",
+                        description: obj.type,
+                        detail: (decodeURIComponent(obj.user.user_name) + " PASS了歌曲: 《" + obj.song.name + "》(" + obj.song.singer + ")"),
+                    });
+                    break;
+                case 'all':
+                    msgList.push({
+                        label: "系统消息",
+                        description: obj.type,
+                        detail: obj.content,
+                    });
+                    break;
+                case 'back':
+                    break;
+                case 'playSong':
+                    break;
+                case 'online':
+                    break;
+                case 'roomUpdate':
+                    break;
+                case 'game_music_success':
+                    msgList.push({
+                        label: "猜歌结果",
+                        description: obj.type,
+                        detail: "恭喜 " + decodeURIComponent(obj.user.user_name) + " 猜中了《" + obj.song.name + "》(" + obj.song.singer + "),30s后开始新一轮游戏",
+                    });
+                    break;
+                case 'story':
+                    msgList.push({
+                        label: "正在播放声音",
+                        description: obj.type,
+                        detail: '有声书正在播放声音《' + obj.story.name + '》(' + obj.story.part + ')',
+                    });
+
+                    break;
+                default:
+            }
+        }
+    },
     messageController(data) {
         let that = this;
         try {
@@ -1029,6 +1032,7 @@ let bbbug = {
                 that.messageList.pop();
             }
             that.messageList.unshift(obj);
+            that.updateMessageList();
             switch (obj.type) {
                 case 'touch':
                     if (obj.at) {

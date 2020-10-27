@@ -12,7 +12,7 @@
         "music",
         "划水"
     ],
-    "version": "1.1.9",
+    "version": "1.2.0",
     "publisher": "Hamm",
     "engines": {
         "vscode": "^1.27.0"
