@@ -81,8 +81,8 @@ exports.activate = function (context) {
         //连接关闭执行
         connection.on('close', function () {
             bbbug.websocket.isConnected = false;
+            clearTimeout(bbbug.websocket.heartBeatTimer);
             if (!bbbug.websocket.forceStop) {
-                console.log("需要重连");
                 setTimeout(function () {
                     bbbug.reConnectWebsocket();
                 }, 1000);
@@ -443,10 +443,12 @@ let bbbug = {
     },
     websocketHeartBeat() {
         let that = this;
-        if (that.websocket.isConnected) {
+        if (that.websocket.isConnected && that.websocket.connection) {
             that.websocket.connection.send("heartBeat");
+            console.log("Heart Beat...");
         }
-        setTimeout(function () {
+        clearTimeout(that.websocket.heartBeatTimer);
+        that.websocket.heartBeatTimer = setTimeout(function () {
             that.websocketHeartBeat();
         }, 10000);
     },
