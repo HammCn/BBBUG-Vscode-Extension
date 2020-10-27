@@ -11,6 +11,7 @@ exports.activate = function (context) {
         vscode.window.showQuickPick(
             [
                 "我要聊天",
+                "聊天记录",
                 "我要点歌",
                 "当前歌单",
                 "我的歌单",
@@ -28,6 +29,9 @@ exports.activate = function (context) {
                     switch (msg) {
                         case '我要聊天':
                             bbbug.sendMessage();
+                            break;
+                        case '聊天记录':
+                            vscode.commands.executeCommand("extension.bbbug.msg.menu");
                             break;
                         case '我要点歌':
                             bbbug.searchSong();
