@@ -1,5 +1,14 @@
-<p align="left">
-<h1>BBBUG聊天室vscode插件</h1>
+
+<h1 align="center">BBBUG聊天室 vscode插件</h1>
+<p align="center">
+<a href="https://github.com/HammCn/BBBUG-Vscode-Extension" target="_blank">Github</a> | 
+<a href="https://gitee.com/bbbug_com/bbbug_vscode_plugin" target="_blank">Gitee</a>
+</p>
+<p align="center">
+<a href="https://gitee.com/bbbug_com/bbbug_vscode_plugin/stargazers" target="_blank"><img src="https://svg.hamm.cn/gitee.svg?type=star&user=bbbug_com&project=bbbug_vscode_plugin"/></a>
+<a href="https://gitee.com/bbbug_com/bbbug_vscode_plugin/members" target="_blank"><img src="https://svg.hamm.cn/gitee.svg?type=fork&user=bbbug_com&project=bbbug_vscode_plugin"/></a>
+<img src="https://svg.hamm.cn/badge.svg?key=Base&value=C%23 WPF"/>
+<img src="https://svg.hamm.cn/badge.svg?key=License&value=GPL-3.0"/>
 </p>
 
 ### 介绍
